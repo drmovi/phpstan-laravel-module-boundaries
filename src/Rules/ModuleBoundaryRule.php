@@ -23,8 +23,6 @@ class ModuleBoundaryRule
     }
 
     /**
-     * Process a node and return any rule violations
-     *
      * @param Node $node
      * @param mixed $scope
      * @return array<string>
@@ -52,7 +50,7 @@ class ModuleBoundaryRule
         $errors = [];
 
         foreach ($imports as $import) {
-            $errorMessage = $this->validateImport($currentModule, $import, $currentFile);
+            $errorMessage = $this->validateImport($currentModule, $import);
             if ($errorMessage !== null) {
                 $errors[] = $errorMessage;
             }
@@ -66,9 +64,6 @@ class ModuleBoundaryRule
         return $node instanceof Use_ || $node instanceof GroupUse;
     }
 
-    /**
-     * Load Laravel project configuration from composer.json
-     */
     private function loadConfiguration($scope): void
     {
         if ($this->moduleConfig !== null) {
@@ -99,9 +94,6 @@ class ModuleBoundaryRule
         }
     }
 
-    /**
-     * Find composer.json by traversing up the directory tree
-     */
     private function findComposerJson(string $currentFile): ?string
     {
         $dir = dirname($currentFile);
@@ -126,16 +118,25 @@ class ModuleBoundaryRule
         return null;
     }
 
-    /**
-     * Extract module name from file path
-     */
     private function extractModuleFromPath(string $filePath): ?string
     {
         if ($this->modulesPath === null) {
             return null;
         }
 
+        // Handle both absolute and relative paths
         $normalizedModulesPath = rtrim($this->modulesPath, '/');
+        
+        // If modules path doesn't start with /, assume it's relative to composer.json location
+        if (!str_starts_with($normalizedModulesPath, '/')) {
+            $composerDir = dirname($this->findComposerJson($filePath) ?? '');
+            $normalizedModulesPath = $composerDir . '/' . $normalizedModulesPath;
+        }
+        
+        $normalizedModulesPath = realpath($normalizedModulesPath);
+        if ($normalizedModulesPath === false) {
+            return null;
+        }
         
         if (!str_contains($filePath, $normalizedModulesPath)) {
             return null;
@@ -150,8 +151,6 @@ class ModuleBoundaryRule
     }
 
     /**
-     * Extract import statements from use nodes
-     * 
      * @return array<string>
      */
     private function extractImports(Node $node): array
@@ -172,10 +171,7 @@ class ModuleBoundaryRule
         return $imports;
     }
 
-    /**
-     * Validate if an import violates module boundaries
-     */
-    private function validateImport(string $currentModule, string $import, string $currentFile): ?string
+    private function validateImport(string $currentModule, string $import): ?string
     {
         $importedModule = $this->extractModuleFromImport($import);
         
@@ -206,9 +202,6 @@ class ModuleBoundaryRule
         );
     }
 
-    /**
-     * Extract module name from import namespace
-     */
     private function extractModuleFromImport(string $import): ?string
     {
         if ($this->modulesPath === null) {
@@ -224,12 +217,26 @@ class ModuleBoundaryRule
             }
         }
 
-        // Fallback: check if any namespace part matches a module directory
+        // Check if any namespace part matches a module directory
         if (is_dir($this->modulesPath)) {
             $moduleDirs = $this->getModuleDirectories();
             foreach ($pathParts as $part) {
-                if (in_array($part, $moduleDirs, true)) {
-                    return $part;
+                $lowercasePart = strtolower($part);
+                foreach ($moduleDirs as $moduleDir) {
+                    if (strtolower($moduleDir) === $lowercasePart) {
+                        return $moduleDir;
+                    }
+                }
+            }
+        }
+
+        // Check for patterns like Drmovi\Order\, Drmovi\Payment\, etc.
+        if (count($pathParts) >= 2) {
+            $secondPart = strtolower($pathParts[1]);
+            $moduleDirs = $this->getModuleDirectories();
+            foreach ($moduleDirs as $moduleDir) {
+                if (strtolower($moduleDir) === $secondPart) {
+                    return $moduleDir;
                 }
             }
         }
@@ -238,23 +245,32 @@ class ModuleBoundaryRule
     }
 
     /**
-     * Get all module directory names
-     * 
      * @return array<string>
      */
     private function getModuleDirectories(): array
     {
-        if ($this->modulesPath === null || !is_dir($this->modulesPath)) {
+        if ($this->modulesPath === null) {
             return [];
         }
 
-        $dirs = scandir($this->modulesPath);
+        // Handle relative paths
+        $normalizedModulesPath = $this->modulesPath;
+        if (!str_starts_with($normalizedModulesPath, '/')) {
+            // Relative path, need to get composer dir
+            $normalizedModulesPath = dirname($this->findComposerJson('') ?? '') . '/' . $normalizedModulesPath;
+        }
+
+        if (!is_dir($normalizedModulesPath)) {
+            return [];
+        }
+
+        $dirs = scandir($normalizedModulesPath);
         if ($dirs === false) {
             return [];
         }
 
-        return array_filter($dirs, function ($dir) {
-            return $dir !== '.' && $dir !== '..' && is_dir($this->modulesPath . '/' . $dir);
+        return array_filter($dirs, function ($dir) use ($normalizedModulesPath) {
+            return $dir !== '.' && $dir !== '..' && is_dir($normalizedModulesPath . '/' . $dir);
         });
     }
 }
