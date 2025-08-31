@@ -1,0 +1,6 @@
+parameters:
+	customRulesetUsed: true
+
+services:
+	moduleBoundaryRule:
+		class: Drmovi\PhpstanLaravelModuleBoundaries\Rules\ModuleBoundaryRule
