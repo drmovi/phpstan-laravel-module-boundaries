@@ -3,3 +3,11 @@ services:
 		class: Drmovi\PhpstanLaravelModuleBoundaries\Rules\ModuleBoundaryRule
 		tags:
 			- phpstan.rules.rule
+	-
+		class: Drmovi\PhpstanLaravelModuleBoundaries\Rules\ConfigHelperRule
+		tags:
+			- phpstan.rules.rule
+	-
+		class: Drmovi\PhpstanLaravelModuleBoundaries\Rules\ConfigFacadeRule
+		tags:
+			- phpstan.rules.rule
