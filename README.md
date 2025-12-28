@@ -26,10 +26,10 @@ In your Laravel project's `composer.json`, add the following configuration:
 ```json
 {
     "extra": {
-        "laravel-module": {
+        "modules": {
             "path": "app/Modules"
         },
-        "phpstan-laravel-module-boundries": {
+        "phpstan-laravel-module-boundaries": {
             "shared": ["shared", "auth"]
         }
     }
@@ -37,7 +37,7 @@ In your Laravel project's `composer.json`, add the following configuration:
 ```
 
 - `laravel-module.path`: The path to your modules directory relative to the project root
-- `phpstan-laravel-module-boundries.shared`: Array of module names that are considered "shared" and can be imported by any module
+- `phpstan-laravel-module-boundaries.shared`: Array of module names that are considered "shared" and can be imported by any module
 
 ### 2. PHPStan Configuration
 
@@ -74,10 +74,10 @@ With configuration:
 ```json
 {
     "extra": {
-        "laravel-module": {
+        "modules": {
             "path": "app/Modules"
         },
-        "phpstan-laravel-module-boundries": {
+        "phpstan-laravel-module-boundaries": {
             "shared": ["shared", "auth"]
         }
     }

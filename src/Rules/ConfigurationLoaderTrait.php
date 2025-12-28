@@ -28,12 +28,12 @@ trait ConfigurationLoaderTrait
             return null;
         }
         
-        $modulesPath = $composer['extra']['laravel-module']['path'] ?? null;
+        $modulesPath = $composer['extra']['modules']['path'] ?? null;
         if ($modulesPath === null) {
             return null;
         }
         
-        $sharedModules = $composer['extra']['phpstan-laravel-module-boundries']['shared'] ?? [];
+        $sharedModules = $composer['extra']['phpstan-laravel-module-boundaries']['shared'] ?? [];
         
         // Convert relative path to absolute
         if (!str_starts_with($modulesPath, '/')) {
